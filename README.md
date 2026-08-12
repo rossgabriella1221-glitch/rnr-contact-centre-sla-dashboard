@@ -2,16 +2,22 @@
 
 Private Next.js dashboard for reviewing contact-centre SLA performance from operational Excel workbooks.
 
-## Data rules
+## Excel input and scoring
 
-- Campaign: Column A
-- Total Calls: Column C
-- SLA source: Column Q (`% SLA`)
+- Agent Name: Column A
+- Total Calls: Column B
+- Complain: Column C
+- Compliment: Column D
+- Attendance: Column E (`Pass` or `Fail`)
 - Rows where Total Calls equals `0` are excluded completely
-- Campaigns are sorted A–Z
+- Agents are sorted A–Z
 - Default SLA benchmark is 80%
 
-Duplicate campaign rows are combined. Total Calls are summed and SLA is calculated as a call-weighted average from Column Q.
+The SLA score is the sum of three components:
+
+- Total Calls: 20% for 500 or more, otherwise 10%
+- Feedback: 30% when compliments are at least three times complaints; 20% when both are zero; otherwise 0%
+- Attendance: 50% for Pass, 20% for Fail
 
 ## Local setup
 
