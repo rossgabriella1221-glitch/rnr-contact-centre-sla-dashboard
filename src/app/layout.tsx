@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RNR Contact Centre | SLA Dashboard",
-  description: "Private contact centre SLA performance reporting.",
+  title: "Connect Centre | SLA Dashboard",
+  description: "Private Connect Centre SLA performance reporting.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

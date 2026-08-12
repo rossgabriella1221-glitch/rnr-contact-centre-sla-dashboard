@@ -1,6 +1,6 @@
-# RNR Contact Centre SLA Dashboard
+# Connect Centre SLA Dashboard
 
-Private Next.js dashboard for reviewing contact-centre SLA performance from operational Excel workbooks.
+Private Next.js dashboard for reviewing Connect Centre SLA performance from operational Excel workbooks.
 
 ## Excel input and scoring
 
