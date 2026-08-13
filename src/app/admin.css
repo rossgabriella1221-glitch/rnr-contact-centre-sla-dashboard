@@ -1,0 +1,9 @@
+.form-success { margin: 0; color: var(--green); font-weight: 700; font-size: 13px; }
+.admin-card { display: grid; grid-template-columns: 1fr auto; gap: 14px 24px; align-items: center; margin: 18px 0; padding: 20px; border: 1px solid var(--line); border-radius: 17px; background: var(--card); }
+.admin-card h2, .admin-card p { margin: 0; }
+.admin-card > div > p:last-child { margin-top: 5px; color: var(--muted); font-size: 12px; }
+.admin-card form { display: flex; gap: 8px; flex-wrap: wrap; }
+.admin-card input { min-width: 210px; border: 1px solid var(--line); border-radius: 10px; padding: 11px; background: var(--paper); color: var(--ink); }
+.admin-card .form-error, .admin-card .form-success { grid-column: 1 / -1; }
+.target-control input:disabled { opacity: .65; cursor: not-allowed; }
+@media (max-width: 900px) { .admin-card { grid-template-columns: 1fr; } }

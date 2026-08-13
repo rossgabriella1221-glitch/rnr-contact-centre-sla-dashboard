@@ -16,13 +16,12 @@ export async function updateSession(request: NextRequest) {
     },
   });
   const { data: { user } } = await supabase.auth.getUser();
-  const isAdmin = user?.email?.toLowerCase() === config.adminEmail;
-  if (request.nextUrl.pathname.startsWith("/dashboard") && !isAdmin) {
+  if (request.nextUrl.pathname.startsWith("/dashboard") && !user) {
     const url = request.nextUrl.clone();
-    url.pathname = user ? "/unauthorized" : "/login";
+    url.pathname = "/login";
     return NextResponse.redirect(url);
   }
-  if (request.nextUrl.pathname === "/login" && isAdmin) {
+  if (request.nextUrl.pathname === "/login" && user) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);

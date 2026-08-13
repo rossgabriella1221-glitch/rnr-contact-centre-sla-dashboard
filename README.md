@@ -32,13 +32,14 @@ The SLA score is the sum of three components:
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 ADMIN_EMAIL
+SUPABASE_SERVICE_ROLE_KEY
 ```
 
 Set all three for Development, Preview, and Production in Vercel. Never commit `.env.local`, passwords, service-role keys, Supabase secrets, or operational Excel files.
 
 ## Security model
 
-There is no signup page or signup action. The Next.js proxy protects `/dashboard` before rendering, and the dashboard Server Component independently validates the current Supabase user and exact `ADMIN_EMAIL` allowlist. Unauthorized authenticated users are redirected to an access-denied page.
+There is no signup page or public signup action. The Next.js proxy and dashboard Server Component both require a fresh, server-validated Supabase user. The `ADMIN_EMAIL` account can create regular user accounts through a server action backed by `SUPABASE_SERVICE_ROLE_KEY`; that key is server-only and must never use a `NEXT_PUBLIC_` prefix. Regular users may upload, view, export, and print. Only the administrator can change the SLA target or use Broadcast Mode.
 
 ## Checks
 

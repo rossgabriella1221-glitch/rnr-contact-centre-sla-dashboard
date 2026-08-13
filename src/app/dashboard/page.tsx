@@ -8,6 +8,6 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   const { adminEmail } = getAppConfig();
   if (!user) redirect("/login");
-  if (user.email?.toLowerCase() !== adminEmail) redirect("/unauthorized");
-  return <Dashboard adminEmail={user.email ?? "Administrator"} />;
+  const isAdmin = user.email?.toLowerCase() === adminEmail;
+  return <Dashboard userEmail={user.email ?? "User"} isAdmin={isAdmin} />;
 }

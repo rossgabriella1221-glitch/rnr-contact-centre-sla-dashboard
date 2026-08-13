@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { signOut } from "../login/actions";
+import { UserAdmin } from "./user-admin";
 
 type Campaign = { name: string; totalCalls: number; complaints: number; compliments: number; attendance: "Pass" | "Fail"; callsScore: number; feedbackScore: number; attendanceScore: number; sla: number };
 const demoData: Campaign[] = [
@@ -17,7 +18,7 @@ function escapeCsv(value: string | number) {
   return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
-export function Dashboard({ adminEmail }: { adminEmail: string }) {
+export function Dashboard({ userEmail, isAdmin }: { userEmail: string; isAdmin: boolean }) {
   const [campaigns, setCampaigns] = useState<Campaign[]>(demoData);
   const [target, setTarget] = useState(80);
   const [dark, setDark] = useState(false);
@@ -68,12 +69,13 @@ export function Dashboard({ adminEmail }: { adminEmail: string }) {
   }
 
   return <main className={`${dark ? "theme-dark" : ""} ${broadcast ? "broadcast" : ""} dashboard-shell`}>
-    <header className="topbar"><div><div className="brand-mark small">CC</div><div><p className="eyebrow">Operations intelligence</p><h1>Connect Centre SLA</h1></div></div><div className="toolbar no-print"><button onClick={() => setDark((v) => !v)}>{dark ? "Light Mode" : "Dark Mode"}</button><button onClick={() => setBroadcast((v) => !v)}>{broadcast ? "Exit Broadcast" : "Broadcast Mode"}</button><form action={signOut}><button>Sign out</button></form></div></header>
-    <section className="control-strip no-print"><div className="source"><p className="label">Data source</p><strong>{fileName}</strong><p className="status-copy">{message}</p></div><input ref={fileRef} hidden type="file" accept=".xlsx,.xls" onChange={(e) => upload(e.target.files?.[0])} /><button className="primary-button" onClick={() => fileRef.current?.click()}>Upload Excel</button><label className="target-control">SLA target <span><input aria-label="SLA target" type="number" min="1" max="100" value={target} onChange={(e) => setTarget(Math.min(100, Math.max(1, Number(e.target.value))))} />%</span></label><button onClick={exportCsv}>Export CSV</button><button onClick={() => window.print()}>Print</button></section>
+    <header className="topbar"><div><div className="brand-mark small">CC</div><div><p className="eyebrow">Operations intelligence</p><h1>Connect Centre SLA</h1></div></div><div className="toolbar no-print"><button onClick={() => setDark((v) => !v)}>{dark ? "Light Mode" : "Dark Mode"}</button>{isAdmin && <button onClick={() => setBroadcast((v) => !v)}>{broadcast ? "Exit Broadcast" : "Broadcast Mode"}</button>}<form action={signOut}><button>Sign out</button></form></div></header>
+    <section className="control-strip no-print"><div className="source"><p className="label">Data source</p><strong>{fileName}</strong><p className="status-copy">{message}</p></div><input ref={fileRef} hidden type="file" accept=".xlsx,.xls" onChange={(e) => upload(e.target.files?.[0])} /><button className="primary-button" onClick={() => fileRef.current?.click()}>Upload Excel</button><label className="target-control">SLA target <span><input aria-label="SLA target" type="number" min="1" max="100" value={target} disabled={!isAdmin} title={isAdmin ? "" : "Only administrators can change the target"} onChange={(e) => setTarget(Math.min(100, Math.max(1, Number(e.target.value))))} />%</span></label><button onClick={exportCsv}>Export CSV</button><button onClick={() => window.print()}>Print</button></section>
+    {isAdmin && <UserAdmin />}
     <section className="metrics-grid"><article><p>Total Calls</p><strong>{totalCalls.toLocaleString()}</strong><span>Eligible agent volume</span></article><article><p>Average SLA</p><strong>{weightedSla.toFixed(1)}%</strong><span className={weightedSla >= target ? "positive" : "negative"}>{weightedSla >= target ? "Above" : "Below"} {target}% target</span></article><article><p>Passed</p><strong>{passed.length}</strong><span className="positive">Meeting benchmark</span></article><article><p>Failed</p><strong>{failed.length}</strong><span className="negative">Needs attention</span></article></section>
     <section className="chart-card"><div className="section-heading"><div><p className="eyebrow">Agent performance</p><h2>SLA by Agent</h2></div><span className="benchmark">Benchmark {target}%</span></div><div className="campaign-chart">{sorted.map((item) => <div className="chart-row" key={item.name}><div className="campaign-label"><span>{item.name}</span><strong>{item.totalCalls.toLocaleString()} calls · {item.sla.toFixed(0)}% SLA</strong></div><div className="track"><div className={item.sla >= target ? "bar pass" : "bar fail"} style={{ width: `${Math.min(100, item.sla)}%` }} /></div></div>)}</div></section>
     <section className="result-grid"><ResultSection title="Passed SLA" subtitle={`At or above ${target}%`} items={passed} type="pass" /><ResultSection title="Failed SLA" subtitle={`Below ${target}%`} items={failed} type="fail" /></section>
-    <footer><span>Signed in as {adminEmail}</span><span>Calls 20% · Feedback 30% · Attendance 50% · Zero-call rows excluded</span></footer>
+    <footer><span>Signed in as {userEmail} · {isAdmin ? "Administrator" : "User"}</span><span>Calls 20% · Feedback 30% · Attendance 50% · Zero-call rows excluded</span></footer>
   </main>;
 }
 

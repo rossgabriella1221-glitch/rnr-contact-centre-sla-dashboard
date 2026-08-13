@@ -1,13 +1,11 @@
 "use server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getAppConfig } from "@/lib/config";
 
 export async function signIn(_previousState: { error: string }, formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
-  const { adminEmail } = getAppConfig();
-  if (!adminEmail || email !== adminEmail) return { error: "This account is not approved for access." };
+  if (!email) return { error: "Enter your approved email address." };
   if (!password) return { error: "Enter your password." };
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
