@@ -18,7 +18,7 @@ function escapeCsv(value: string | number) {
   return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
-export function Dashboard({ userEmail, isAdmin }: { userEmail: string; isAdmin: boolean }) {
+export function Dashboard({ username, isAdmin }: { username: string; isAdmin: boolean }) {
   const [campaigns, setCampaigns] = useState<Campaign[]>(demoData);
   const [target, setTarget] = useState(80);
   const [dark, setDark] = useState(false);
@@ -75,7 +75,7 @@ export function Dashboard({ userEmail, isAdmin }: { userEmail: string; isAdmin: 
     <section className="metrics-grid"><article><p>Total Calls</p><strong>{totalCalls.toLocaleString()}</strong><span>Eligible agent volume</span></article><article><p>Average SLA</p><strong>{weightedSla.toFixed(1)}%</strong><span className={weightedSla >= target ? "positive" : "negative"}>{weightedSla >= target ? "Above" : "Below"} {target}% target</span></article><article><p>Passed</p><strong>{passed.length}</strong><span className="positive">Meeting benchmark</span></article><article><p>Failed</p><strong>{failed.length}</strong><span className="negative">Needs attention</span></article></section>
     <section className="chart-card"><div className="section-heading"><div><p className="eyebrow">Agent performance</p><h2>SLA by Agent</h2></div><span className="benchmark">Benchmark {target}%</span></div><div className="campaign-chart">{sorted.map((item) => <div className="chart-row" key={item.name}><div className="campaign-label"><span>{item.name}</span><strong>{item.totalCalls.toLocaleString()} calls · {item.sla.toFixed(0)}% SLA</strong></div><div className="track"><div className={item.sla >= target ? "bar pass" : "bar fail"} style={{ width: `${Math.min(100, item.sla)}%` }} /></div></div>)}</div></section>
     <section className="result-grid"><ResultSection title="Passed SLA" subtitle={`At or above ${target}%`} items={passed} type="pass" /><ResultSection title="Failed SLA" subtitle={`Below ${target}%`} items={failed} type="fail" /></section>
-    <footer><span>Signed in as {userEmail} · {isAdmin ? "Administrator" : "User"}</span><span>Calls 20% · Feedback 30% · Attendance 50% · Zero-call rows excluded</span></footer>
+    <footer><span>Signed in as {username} · {isAdmin ? "Administrator" : "User"}</span><span>Calls 20% · Feedback 30% · Attendance 50% · Zero-call rows excluded</span></footer>
   </main>;
 }
 

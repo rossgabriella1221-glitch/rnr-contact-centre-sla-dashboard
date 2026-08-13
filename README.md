@@ -39,7 +39,7 @@ Set all three for Development, Preview, and Production in Vercel. Never commit `
 
 ## Security model
 
-There is no signup page or public signup action. The Next.js proxy and dashboard Server Component both require a fresh, server-validated Supabase user. The `ADMIN_EMAIL` account can create regular user accounts through a server action backed by `SUPABASE_SERVICE_ROLE_KEY`; that key is server-only and must never use a `NEXT_PUBLIC_` prefix. Regular users may upload, view, export, and print. Only the administrator can change the SLA target or use Broadcast Mode.
+There is no signup page or public signup action. The Next.js proxy and dashboard Server Component both require a fresh, server-validated Supabase user. The `ADMIN_EMAIL` account creates usernames through a server action backed by `SUPABASE_SERVICE_ROLE_KEY`; usernames are converted server-side to internal Supabase identifiers. The service key is server-only and must never use a `NEXT_PUBLIC_` prefix. Regular users may upload, view, export, and print. Only the administrator can change the SLA target or use Broadcast Mode.
 
 ## Checks
 
