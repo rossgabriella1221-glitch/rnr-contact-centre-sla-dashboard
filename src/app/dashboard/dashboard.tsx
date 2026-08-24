@@ -4,8 +4,9 @@ import { useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { signOut } from "../login/actions";
 import { UserAdmin } from "./user-admin";
+import { replaceDashboardData } from "./data-actions";
 
-type Agent = {
+export type Agent = {
   name: string;
   workHours: number;
   complaints: number;
@@ -136,12 +137,14 @@ function rankingSort(a: Agent, b: Agent) {
   return b.totalScore - a.totalScore || a.awayRate - b.awayRate || a.complaints - b.complaints || b.compliments - a.compliments || a.late - b.late || a.name.localeCompare(b.name);
 }
 
-export function Dashboard({ username, isAdmin }: { username: string; isAdmin: boolean }) {
-  const [agents, setAgents] = useState<Agent[]>(demoData);
+export function Dashboard({ username, isAdmin, initialAgents, initialFileName, initialUploadedAt }: { username: string; isAdmin: boolean; initialAgents?: Agent[]; initialFileName?: string; initialUploadedAt?: string }) {
+  const hasSavedData = Boolean(initialAgents?.length);
+  const [agents, setAgents] = useState<Agent[]>(hasSavedData ? initialAgents! : demoData);
   const [dark, setDark] = useState(false);
   const [broadcast, setBroadcast] = useState(false);
-  const [fileName, setFileName] = useState("Sample KPI overview");
-  const [message, setMessage] = useState("Upload KPI.xlsx to replace the sample agent data.");
+  const [fileName, setFileName] = useState(initialFileName ?? "Sample KPI overview");
+  const [message, setMessage] = useState(hasSavedData ? `${initialAgents!.length} saved agents loaded${initialUploadedAt ? ` · Last upload ${new Date(initialUploadedAt).toLocaleString()}` : ""}.` : "Upload KPI.xlsx to replace the sample agent data.");
+  const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const ranked = useMemo(() => [...agents].sort(rankingSort), [agents]);
@@ -206,11 +209,17 @@ export function Dashboard({ username, isAdmin }: { username: string; isAdmin: bo
       });
 
       if (!next.length) throw new Error("No agent rows found");
+      setSaving(true);
+      const result = await replaceDashboardData(next, file.name);
+      if (result.error) throw new Error(result.error);
       setAgents(next);
       setFileName(file.name);
-      setMessage(`${next.length} agents loaded and ranked. Yellow-highlighted rows are marked New Agent.`);
+      setMessage(`${next.length} agents saved and ranked. This upload replaced the previous Excel data.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not read this workbook.");
+    } finally {
+      setSaving(false);
+      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
@@ -229,7 +238,7 @@ export function Dashboard({ username, isAdmin }: { username: string; isAdmin: bo
     {broadcast && isAdmin && <button className="broadcast-exit" onClick={() => setBroadcast(false)}>Exit Broadcast</button>}
     <header className="topbar"><div><div className="brand-mark small">KPI</div><div><p className="eyebrow">Operations intelligence</p><h1>Agent KPI Performance Dashboard</h1></div></div><div className="toolbar no-print"><button onClick={() => setDark((v) => !v)}>{dark ? "Light Mode" : "Dark Mode"}</button>{isAdmin && <button onClick={() => setBroadcast((v) => !v)}>{broadcast ? "Exit Broadcast" : "Broadcast Mode"}</button>}<form action={signOut}><button>Sign out</button></form></div></header>
 
-    <section className="control-strip no-print"><div className="source"><p className="label">Data source</p><strong>{fileName}</strong><p className="status-copy">{message}</p></div><input ref={fileRef} hidden type="file" accept=".xlsx" onChange={(e) => upload(e.target.files?.[0])} /><button className="primary-button" onClick={() => fileRef.current?.click()}>Upload KPI Excel</button><button onClick={exportCsv}>Export CSV</button><button onClick={() => window.print()}>Print</button></section>
+    <section className="control-strip no-print"><div className="source"><p className="label">Data source</p><strong>{fileName}</strong><p className="status-copy">{message}</p></div><input ref={fileRef} hidden type="file" accept=".xlsx" onChange={(e) => upload(e.target.files?.[0])} /><button className="primary-button" disabled={saving} onClick={() => fileRef.current?.click()}>{saving ? "Saving…" : "Upload KPI Excel"}</button><button onClick={exportCsv}>Export CSV</button><button onClick={() => window.print()}>Print</button></section>
 
     {isAdmin && <UserAdmin />}
 
