@@ -14,10 +14,14 @@ type Agent = {
   workingDays: number;
   daysAttended: number;
   nonWorkingDays: number;
+  awayMinutes: number;
+  loggedInMinutes: number;
   isNewAgent: boolean;
   feedbackScore: number;
   attendanceRate: number;
   attendanceScore: number;
+  awayRate: number;
+  awayScore: number;
   lateScore: number;
   totalScore: number;
   feedbackPass: boolean;
@@ -37,10 +41,10 @@ type StyledCell = XLSX.CellObject & {
 };
 
 const demoData: Agent[] = [
-  scoreAgent({ name: "Agent A", workHours: 8, complaints: 1, compliments: 3, late: 1, workingDays: 22, daysAttended: 20, nonWorkingDays: 2, isNewAgent: false }),
-  scoreAgent({ name: "Agent B", workHours: 12, complaints: 0, compliments: 0, late: 2, workingDays: 18, daysAttended: 16, nonWorkingDays: 2, isNewAgent: true }),
-  scoreAgent({ name: "Agent C", workHours: 8, complaints: 2, compliments: 4, late: 4, workingDays: 22, daysAttended: 18, nonWorkingDays: 4, isNewAgent: false }),
-  scoreAgent({ name: "Agent D", workHours: 12, complaints: 0, compliments: 2, late: 0, workingDays: 18, daysAttended: 14, nonWorkingDays: 4, isNewAgent: false }),
+  scoreAgent({ name: "Agent A", workHours: 8, complaints: 1, compliments: 3, late: 1, workingDays: 22, daysAttended: 20, nonWorkingDays: 2, awayMinutes: 25, loggedInMinutes: 455, isNewAgent: false }),
+  scoreAgent({ name: "Agent B", workHours: 12, complaints: 0, compliments: 0, late: 2, workingDays: 18, daysAttended: 16, nonWorkingDays: 2, awayMinutes: 55, loggedInMinutes: 665, isNewAgent: true }),
+  scoreAgent({ name: "Agent C", workHours: 8, complaints: 2, compliments: 4, late: 4, workingDays: 22, daysAttended: 18, nonWorkingDays: 4, awayMinutes: 80, loggedInMinutes: 400, isNewAgent: false }),
+  scoreAgent({ name: "Agent D", workHours: 12, complaints: 0, compliments: 2, late: 0, workingDays: 18, daysAttended: 14, nonWorkingDays: 4, awayMinutes: 35, loggedInMinutes: 685, isNewAgent: false }),
 ];
 
 function normalized(value: unknown) {
@@ -51,12 +55,27 @@ function numberValue(value: unknown) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function scoreAgent(input: Omit<Agent, "feedbackScore" | "attendanceRate" | "attendanceScore" | "lateScore" | "totalScore" | "feedbackPass" | "attendancePass" | "latePass">): Agent {
+function durationMinutes(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) return Math.max(0, value * 24 * 60);
+  const text = String(value ?? "").trim();
+  if (!text) return 0;
+  const parts = text.split(":").map(Number);
+  if (parts.every(Number.isFinite) && parts.length >= 2 && parts.length <= 3) {
+    const [hours, minutes, seconds = 0] = parts.length === 2 ? [parts[0], parts[1], 0] : parts;
+    return Math.max(0, hours * 60 + minutes + seconds / 60);
+  }
+  return 0;
+}
+
+function scoreAgent(input: Omit<Agent, "feedbackScore" | "attendanceRate" | "attendanceScore" | "awayRate" | "awayScore" | "lateScore" | "totalScore" | "feedbackPass" | "attendancePass" | "latePass">): Agent {
   const feedbackPass = input.complaints === 0 || input.compliments >= input.complaints * 3;
   const feedbackScore = feedbackPass ? 30 : 0;
   const attendanceRate = input.workingDays > 0 ? Math.min(100, Math.round((input.daysAttended / input.workingDays) * 10000) / 100) : 0;
   const attendancePass = attendanceRate === 100;
-  const attendanceScore = Math.round(attendanceRate * 45) / 100;
+  const attendanceScore = Math.round(attendanceRate * 25) / 100;
+  const totalTrackedMinutes = input.awayMinutes + input.loggedInMinutes;
+  const awayRate = totalTrackedMinutes > 0 ? Math.min(100, Math.round((input.awayMinutes / totalTrackedMinutes) * 10000) / 100) : 100;
+  const awayScore = Math.round((100 - awayRate) * 20) / 100;
   const latePass = input.late <= 3;
   const lateScore = latePass ? 25 : 0;
   return {
@@ -64,8 +83,10 @@ function scoreAgent(input: Omit<Agent, "feedbackScore" | "attendanceRate" | "att
     feedbackScore,
     attendanceRate,
     attendanceScore,
+    awayRate,
+    awayScore,
     lateScore,
-    totalScore: Math.round((feedbackScore + attendanceScore + lateScore) * 100) / 100,
+    totalScore: Math.round((feedbackScore + attendanceScore + lateScore + awayScore) * 100) / 100,
     feedbackPass,
     attendancePass,
     latePass,
@@ -104,8 +125,13 @@ function scoreText(value: number) {
   return value.toFixed(2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
 }
 
+function durationText(minutes: number) {
+  const total = Math.round(minutes);
+  return `${Math.floor(total / 60)}h ${total % 60}m`;
+}
+
 function rankingSort(a: Agent, b: Agent) {
-  return b.totalScore - a.totalScore || a.complaints - b.complaints || b.compliments - a.compliments || a.late - b.late || a.name.localeCompare(b.name);
+  return b.totalScore - a.totalScore || a.awayRate - b.awayRate || a.complaints - b.complaints || b.compliments - a.compliments || a.late - b.late || a.name.localeCompare(b.name);
 }
 
 export function Dashboard({ username, isAdmin }: { username: string; isAdmin: boolean }) {
@@ -117,11 +143,12 @@ export function Dashboard({ username, isAdmin }: { username: string; isAdmin: bo
   const fileRef = useRef<HTMLInputElement>(null);
 
   const ranked = useMemo(() => [...agents].sort(rankingSort), [agents]);
+  const topThree = ranked.slice(0, 3);
   const alphabetical = useMemo(() => [...agents].sort((a, b) => a.name.localeCompare(b.name)), [agents]);
   const topAgent = ranked[0];
   const averageScore = agents.length ? agents.reduce((sum, item) => sum + item.totalScore, 0) / agents.length : 0;
   const fullScore = agents.filter((item) => item.totalScore === 100).length;
-  const needsAttention = agents.filter((item) => !item.feedbackPass || !item.attendancePass || !item.latePass).length;
+  const needsAttention = agents.filter((item) => !item.feedbackPass || !item.attendancePass || !item.latePass || item.awayRate > 0).length;
   const newAgents = agents.filter((item) => item.isNewAgent).length;
 
   async function upload(file?: File) {
@@ -143,6 +170,8 @@ export function Dashboard({ username, isAdmin }: { username: string; isAdmin: bo
         workingDays: findHeader(headerMap, ["Working Days"]),
         daysAttended: findHeader(headerMap, ["Days Attended", "Attended Days"]),
         nonWorkingDays: findHeader(headerMap, ["Non Working Days", "Non-Working Days"]),
+        awayTime: findHeader(headerMap, ["Total Away Time", "Away Time"]),
+        loggedInTime: findHeader(headerMap, ["Total Logged-In Time", "Total Logged In Time", "Logged-In Time", "Logged In Time"]),
       };
       if (Object.values(index).some((i) => i < 0)) {
         throw new Error("Required KPI headers are missing");
@@ -168,6 +197,8 @@ export function Dashboard({ username, isAdmin }: { username: string; isAdmin: bo
           workingDays: Math.max(0, numberValue(row[index.workingDays])),
           daysAttended: Math.max(0, numberValue(row[index.daysAttended])),
           nonWorkingDays: Math.max(0, numberValue(row[index.nonWorkingDays])),
+          awayMinutes: durationMinutes(row[index.awayTime]),
+          loggedInMinutes: durationMinutes(row[index.loggedInTime]),
           isNewAgent,
         })];
       });
@@ -182,7 +213,7 @@ export function Dashboard({ username, isAdmin }: { username: string; isAdmin: bo
   }
 
   function exportCsv() {
-    const lines: (string | number)[][] = [["Rank", "Agent Name", "New Agent", "Work Hours", "Complain", "Compliment", "Late", "Working Days", "Days Attended", "Attendance %", "Non Working Days", "Feedback Score", "Attendance Score", "Late Score", "Total KPI Score"], ...ranked.map((a, i) => [i + 1, a.name, a.isNewAgent ? "Yes" : "No", a.workHours, a.complaints, a.compliments, a.late, a.workingDays, a.daysAttended, a.attendanceRate, a.nonWorkingDays, a.feedbackScore, a.attendanceScore, a.lateScore, a.totalScore])];
+    const lines: (string | number)[][] = [["Rank", "Agent Name", "New Agent", "Work Hours", "Complain", "Compliment", "Late", "Working Days", "Days Attended", "Attendance %", "Non Working Days", "Total Away Minutes", "Total Logged-In Minutes", "Away %", "Feedback Score", "Attendance Score", "Late Score", "Away Score", "Total KPI Score"], ...ranked.map((a, i) => [i + 1, a.name, a.isNewAgent ? "Yes" : "No", a.workHours, a.complaints, a.compliments, a.late, a.workingDays, a.daysAttended, a.attendanceRate, a.nonWorkingDays, a.awayMinutes, a.loggedInMinutes, a.awayRate, a.feedbackScore, a.attendanceScore, a.lateScore, a.awayScore, a.totalScore])];
     const blob = new Blob([lines.map((row) => row.map(escapeCsv).join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
@@ -200,16 +231,18 @@ export function Dashboard({ username, isAdmin }: { username: string; isAdmin: bo
 
     {isAdmin && <UserAdmin />}
 
-    <section className="metrics-grid kpi-five"><article><p>Top Agent</p><strong className="top-agent-name">{topAgent?.name ?? "—"}</strong><span>{topAgent ? `${scoreText(topAgent.totalScore)}% KPI` : "No data"}</span></article><article><p>Average KPI</p><strong>{averageScore.toFixed(1)}%</strong><span>Across {agents.length} agents</span></article><article><p>100% KPI</p><strong>{fullScore}</strong><span className="positive">Full-score agents</span></article><article><p>Needs Attention</p><strong>{needsAttention}</strong><span className={needsAttention ? "negative" : "positive"}>Feedback, attendance or late failed</span></article><article><p>New Agents</p><strong>{newAgents}</strong><span className="new-agent-text">Yellow-highlighted in Excel</span></article></section>
+    <section className="top-three-card"><div className="section-heading"><div><p className="eyebrow">Best overall performance</p><h2>Top 3 Agents</h2><p>Highest KPI score, with the lowest Away % used as the first tie-breaker.</p></div></div><div className="top-three-grid">{topThree.map((agent, index) => <article key={agent.name}><span className="top-three-rank">#{index + 1}</span><strong>{agent.name}</strong><p>{scoreText(agent.totalScore)}% KPI</p><small>{scoreText(agent.awayRate)}% away · {scoreText(agent.awayScore)}/20 points</small></article>)}</div></section>
 
-    <section className="scoring-card"><div className="section-heading"><div><p className="eyebrow">100-point framework</p><h2>KPI scoring rules</h2></div><span className="benchmark">Maximum 100%</span></div><div className="score-rules"><div><strong>30%</strong><span>Compliment / Complaint</span><small>3 compliments per complaint · no feedback = 30</small></div><div><strong>45%</strong><span>Attendance</span><small>Days Attended ÷ Working Days × 45 points</small></div><div><strong>25%</strong><span>Late</span><small>≤3 = 25 · above 3 = 0</small></div></div></section>
+    <section className="metrics-grid kpi-five"><article><p>Top Agent</p><strong className="top-agent-name">{topAgent?.name ?? "—"}</strong><span>{topAgent ? `${scoreText(topAgent.totalScore)}% KPI · ${scoreText(topAgent.awayRate)}% away` : "No data"}</span></article><article><p>Average KPI</p><strong>{averageScore.toFixed(1)}%</strong><span>Across {agents.length} agents</span></article><article><p>100% KPI</p><strong>{fullScore}</strong><span className="positive">Full-score agents</span></article><article><p>Needs Attention</p><strong>{needsAttention}</strong><span className={needsAttention ? "negative" : "positive"}>Any KPI points lost</span></article><article><p>New Agents</p><strong>{newAgents}</strong><span className="new-agent-text">Yellow-highlighted in Excel</span></article></section>
 
-    <section className="chart-card"><div className="section-heading"><div><p className="eyebrow">Leaderboard</p><h2>Top Agent Ranking</h2><p>Ranked by KPI score, including proportional attendance, then complaints, compliments, lateness and name.</p></div></div><div className="leaderboard">{ranked.map((agent, index) => <div className={`leader-row ${index < 3 ? `podium podium-${index + 1}` : ""}`} key={agent.name}><span className="rank">#{index + 1}</span><div className="leader-name"><strong>{agent.name}</strong>{agent.isNewAgent && <span className="new-agent-badge">NEW AGENT</span>}</div><span>{agent.complaints} complaint{agent.complaints === 1 ? "" : "s"}</span><span>{agent.compliments} compliment{agent.compliments === 1 ? "" : "s"}</span><strong className="leader-score">{scoreText(agent.totalScore)}%</strong></div>)}</div></section>
+    <section className="scoring-card"><div className="section-heading"><div><p className="eyebrow">100-point framework</p><h2>KPI scoring rules</h2></div><span className="benchmark">Maximum 100%</span></div><div className="score-rules"><div><strong>30%</strong><span>Compliment / Complaint</span><small>3 compliments per complaint · no feedback = 30</small></div><div><strong>25%</strong><span>Attendance</span><small>Days Attended ÷ Working Days × 25 points</small></div><div><strong>25%</strong><span>Late</span><small>≤3 = 25 · above 3 = 0</small></div><div><strong>20%</strong><span>Away Time</span><small>Away ÷ (Away + Logged-In) · lower is better</small></div></div></section>
+
+    <section className="chart-card"><div className="section-heading"><div><p className="eyebrow">Leaderboard</p><h2>Top Agent Ranking</h2><p>Ranked by overall KPI score, then lowest Away %, complaints, compliments, lateness and name.</p></div></div><div className="leaderboard">{ranked.map((agent, index) => <div className={`leader-row ${index < 3 ? `podium podium-${index + 1}` : ""}`} key={agent.name}><span className="rank">#{index + 1}</span><div className="leader-name"><strong>{agent.name}</strong>{agent.isNewAgent && <span className="new-agent-badge">NEW AGENT</span>}</div><span>{scoreText(agent.awayRate)}% away</span><span>{agent.complaints} complaint{agent.complaints === 1 ? "" : "s"}</span><span>{agent.compliments} compliment{agent.compliments === 1 ? "" : "s"}</span><strong className="leader-score">{scoreText(agent.totalScore)}%</strong></div>)}</div></section>
 
     <section className="chart-card"><div className="section-heading"><div><p className="eyebrow">Agent performance</p><h2>KPI Score by Agent</h2><p>Agents are arranged A–Z by total KPI score.</p></div></div><div className="campaign-chart">{alphabetical.map((agent) => <div className="chart-row" key={agent.name}><div className="campaign-label"><span>{agent.name}{agent.isNewAgent && <em className="new-agent-dot">New</em>}</span><strong>{scoreText(agent.totalScore)}% KPI</strong></div><div className="track"><div className={`bar ${agent.totalScore >= 90 ? "pass" : agent.totalScore >= 70 ? "warn" : "fail"}`} style={{ width: `${Math.min(100, agent.totalScore)}%` }} /></div></div>)}</div></section>
 
-    <section className="detail-card"><div className="section-heading"><div><p className="eyebrow">Score breakdown</p><h2>Agent KPI Detail</h2></div></div><div className="table-wrap"><table className="kpi-table"><thead><tr><th>Rank</th><th>Agent</th><th>Hours</th><th>Complaints</th><th>Compliments</th><th>Late</th><th>Attendance %</th><th>Non Working</th><th>Feedback</th><th>Attendance</th><th>Late KPI</th><th>Total</th></tr></thead><tbody>{ranked.map((a, i) => <tr key={a.name} className={a.isNewAgent ? "new-agent-row" : ""}><td>#{i + 1}</td><td><strong>{a.name}</strong>{a.isNewAgent && <span className="new-agent-badge">NEW</span>}</td><td>{a.workHours}h</td><td>{a.complaints}</td><td>{a.compliments}</td><td className={a.latePass ? "positive" : "negative"}>{a.late}</td><td>{scoreText(a.attendanceRate)}%</td><td>{a.nonWorkingDays}</td><td className={a.feedbackPass ? "positive" : "negative"}>{a.feedbackScore}/30</td><td>{scoreText(a.attendanceScore)}/45</td><td className={a.latePass ? "positive" : "negative"}>{a.lateScore}/25</td><td><strong>{scoreText(a.totalScore)}%</strong></td></tr>)}</tbody></table></div></section>
+    <section className="detail-card"><div className="section-heading"><div><p className="eyebrow">Score breakdown</p><h2>Agent KPI Detail</h2></div></div><div className="table-wrap"><table className="kpi-table"><thead><tr><th>Rank</th><th>Agent</th><th>Hours</th><th>Complaints</th><th>Compliments</th><th>Late</th><th>Attendance %</th><th>Away Time</th><th>Logged-In</th><th>Away %</th><th>Feedback</th><th>Attendance</th><th>Late KPI</th><th>Away KPI</th><th>Total</th></tr></thead><tbody>{ranked.map((a, i) => <tr key={a.name} className={a.isNewAgent ? "new-agent-row" : ""}><td>#{i + 1}</td><td><strong>{a.name}</strong>{a.isNewAgent && <span className="new-agent-badge">NEW</span>}</td><td>{a.workHours}h</td><td>{a.complaints}</td><td>{a.compliments}</td><td className={a.latePass ? "positive" : "negative"}>{a.late}</td><td>{scoreText(a.attendanceRate)}%</td><td>{durationText(a.awayMinutes)}</td><td>{durationText(a.loggedInMinutes)}</td><td>{scoreText(a.awayRate)}%</td><td className={a.feedbackPass ? "positive" : "negative"}>{a.feedbackScore}/30</td><td>{scoreText(a.attendanceScore)}/25</td><td className={a.latePass ? "positive" : "negative"}>{a.lateScore}/25</td><td>{scoreText(a.awayScore)}/20</td><td><strong>{scoreText(a.totalScore)}%</strong></td></tr>)}</tbody></table></div></section>
 
-    <footer><span>Signed in as {username} · {isAdmin ? "Administrator" : "User"}</span><span>Feedback 30% · Attendance 45% · Late 25%</span></footer>
+    <footer><span>Signed in as {username} · {isAdmin ? "Administrator" : "User"}</span><span>Feedback 30% · Attendance 25% · Late 25% · Away Time 20%</span></footer>
   </main>;
 }
