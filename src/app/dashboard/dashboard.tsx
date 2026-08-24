@@ -56,9 +56,11 @@ function numberValue(value: unknown) {
 }
 
 function durationMinutes(value: unknown) {
-  if (typeof value === "number" && Number.isFinite(value)) return Math.max(0, value * 24 * 60);
+  if (typeof value === "number" && Number.isFinite(value)) return Math.max(0, value / 60);
   const text = String(value ?? "").trim();
   if (!text) return 0;
+  const seconds = Number(text);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds / 60);
   const parts = text.split(":").map(Number);
   if (parts.every(Number.isFinite) && parts.length >= 2 && parts.length <= 3) {
     const [hours, minutes, seconds = 0] = parts.length === 2 ? [parts[0], parts[1], 0] : parts;
@@ -213,7 +215,7 @@ export function Dashboard({ username, isAdmin }: { username: string; isAdmin: bo
   }
 
   function exportCsv() {
-    const lines: (string | number)[][] = [["Rank", "Agent Name", "New Agent", "Work Hours", "Complain", "Compliment", "Late", "Working Days", "Days Attended", "Attendance %", "Non Working Days", "Total Away Minutes", "Total Logged-In Minutes", "Away %", "Feedback Score", "Attendance Score", "Late Score", "Away Score", "Total KPI Score"], ...ranked.map((a, i) => [i + 1, a.name, a.isNewAgent ? "Yes" : "No", a.workHours, a.complaints, a.compliments, a.late, a.workingDays, a.daysAttended, a.attendanceRate, a.nonWorkingDays, a.awayMinutes, a.loggedInMinutes, a.awayRate, a.feedbackScore, a.attendanceScore, a.lateScore, a.awayScore, a.totalScore])];
+    const lines: (string | number)[][] = [["Rank", "Agent Name", "New Agent", "Work Hours", "Complain", "Compliment", "Late", "Working Days", "Days Attended", "Attendance %", "Non Working Days", "Total Away Seconds", "Total Logged-In Seconds", "Away %", "Feedback Score", "Attendance Score", "Late Score", "Away Score", "Total KPI Score"], ...ranked.map((a, i) => [i + 1, a.name, a.isNewAgent ? "Yes" : "No", a.workHours, a.complaints, a.compliments, a.late, a.workingDays, a.daysAttended, a.attendanceRate, a.nonWorkingDays, Math.round(a.awayMinutes * 60), Math.round(a.loggedInMinutes * 60), a.awayRate, a.feedbackScore, a.attendanceScore, a.lateScore, a.awayScore, a.totalScore])];
     const blob = new Blob([lines.map((row) => row.map(escapeCsv).join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
