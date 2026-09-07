@@ -15,6 +15,7 @@ type DashboardAgent = {
   awayMinutes: number;
   loggedInMinutes: number;
   qaRate: number | null;
+  qaScore: number | null;
   isNewAgent: boolean;
   feedbackScore: number;
   attendanceRate: number;
@@ -41,6 +42,7 @@ function validAgent(value: unknown): value is DashboardAgent {
     && agent.name.length <= 200
     && numberFields.every((field) => typeof agent[field] === "number" && Number.isFinite(agent[field]))
     && (agent.qaRate === null || typeof agent.qaRate === "number" && Number.isFinite(agent.qaRate))
+    && (agent.qaScore === null || typeof agent.qaScore === "number" && Number.isFinite(agent.qaScore))
     && (agent.finalKpi === null || typeof agent.finalKpi === "number" && Number.isFinite(agent.finalKpi))
     && (agent.status === "PASS" || agent.status === "FAIL" || agent.status === "REVIEW")
     && typeof agent.statusReason === "string"

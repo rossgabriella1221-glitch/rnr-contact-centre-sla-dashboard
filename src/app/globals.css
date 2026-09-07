@@ -42,6 +42,7 @@ button:disabled{opacity:.6;cursor:wait}
 .metrics-grid.kpi-five{grid-template-columns:repeat(5,1fr)}
 .metrics-grid.kpi-seven{grid-template-columns:repeat(7,1fr)}
 .score-rules.five{grid-template-columns:repeat(5,1fr)}
+.score-rules.six{grid-template-columns:repeat(6,1fr)}
 .new-agent-panel{border-color:#e4b91e;background:linear-gradient(135deg,var(--amber-soft),var(--card))}
 .status-badge{display:inline-flex;padding:4px 8px;border-radius:99px;font-size:10px;font-weight:900}
 .status-badge.pass{background:var(--green-soft);color:var(--green)}
@@ -113,7 +114,7 @@ footer{justify-content:space-between;color:var(--muted);font-size:11px;padding:2
 .control-strip .source{width:100%;max-width:none}
 .metrics-grid,.metrics-grid.kpi-five{grid-template-columns:1fr 1fr}
 .top-three-grid{grid-template-columns:1fr}
-.score-rules{grid-template-columns:1fr 1fr}
+.score-rules,.score-rules.five,.score-rules.six{grid-template-columns:1fr 1fr}
 .chart-row{grid-template-columns:1fr;gap:8px}
 .campaign-label{flex-direction:row}
 .leader-row{grid-template-columns:44px 1fr 76px}
@@ -122,7 +123,7 @@ footer{justify-content:space-between;color:var(--muted);font-size:11px;padding:2
 @media(max-width:560px){.dashboard-shell{padding:18px}
 .topbar{display:block}
 .toolbar{justify-content:flex-start;margin-top:16px}
-.metrics-grid,.metrics-grid.kpi-five,.score-rules{grid-template-columns:1fr}
+.metrics-grid,.metrics-grid.kpi-five,.score-rules,.score-rules.five,.score-rules.six{grid-template-columns:1fr}
 .login-card{padding:30px}
 .login-card h1{font-size:34px}
 footer{display:block}
