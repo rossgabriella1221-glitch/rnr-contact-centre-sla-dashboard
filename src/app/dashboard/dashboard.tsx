@@ -40,9 +40,12 @@ type HeaderMap = Record<string, number>;
 
 type StyledCell = XLSX.CellObject & {
   s?: {
+    patternType?: string;
+    fgColor?: { rgb?: string; indexed?: number };
+    bgColor?: { rgb?: string; indexed?: number };
     fill?: {
-      fgColor?: { rgb?: string };
-      bgColor?: { rgb?: string };
+      fgColor?: { rgb?: string; indexed?: number };
+      bgColor?: { rgb?: string; indexed?: number };
     };
   };
 };
@@ -115,7 +118,13 @@ function scoreAgent(input: Omit<Agent, "feedbackScore" | "attendanceRate" | "att
 }
 
 function isYellow(cell?: StyledCell) {
-  const rgb = (cell?.s?.fill?.fgColor?.rgb ?? cell?.s?.fill?.bgColor?.rgb ?? "").toUpperCase().replace(/^FF/, "");
+  const style = cell?.s;
+  const foreground = style?.fgColor ?? style?.fill?.fgColor;
+  const background = style?.bgColor ?? style?.fill?.bgColor;
+  const indexedYellow = foreground?.indexed === 5 || foreground?.indexed === 6 || foreground?.indexed === 13;
+  if (indexedYellow) return true;
+  const rawRgb = (foreground?.rgb ?? background?.rgb ?? "").toUpperCase();
+  const rgb = rawRgb.length === 8 ? rawRgb.slice(2) : rawRgb;
   if (!rgb || rgb.length !== 6) return false;
   const r = parseInt(rgb.slice(0, 2), 16);
   const g = parseInt(rgb.slice(2, 4), 16);
