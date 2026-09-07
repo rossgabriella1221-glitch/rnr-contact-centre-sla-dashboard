@@ -44,6 +44,13 @@ button:disabled{opacity:.6;cursor:wait}
 .score-rules.five{grid-template-columns:repeat(5,1fr)}
 .score-rules.six{grid-template-columns:repeat(6,1fr)}
 .new-agent-panel{border-color:#e4b91e;background:linear-gradient(135deg,var(--amber-soft),var(--card))}
+.shift-comparison-card{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:24px;margin:18px 0}
+.shift-comparison-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+.shift-comparison-grid article{display:grid;gap:7px;padding:22px;border:1px solid var(--line);border-radius:14px;background:var(--paper)}
+.shift-comparison-grid article>span{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.shift-comparison-grid article>strong{font-size:34px;color:var(--green)}
+.shift-comparison-grid article>small{color:var(--muted)}
+.shift-comparison-grid article.shift-winner{border:2px solid var(--green);background:linear-gradient(135deg,var(--green-soft),var(--card));box-shadow:0 8px 28px #1f7a5a18}
 .status-badge{display:inline-flex;padding:4px 8px;border-radius:99px;font-size:10px;font-weight:900}
 .status-badge.pass{background:var(--green-soft);color:var(--green)}
 .status-badge.fail{background:var(--red-soft);color:var(--red)}
@@ -114,6 +121,7 @@ footer{justify-content:space-between;color:var(--muted);font-size:11px;padding:2
 .control-strip .source{width:100%;max-width:none}
 .metrics-grid,.metrics-grid.kpi-five{grid-template-columns:1fr 1fr}
 .top-three-grid{grid-template-columns:1fr}
+.shift-comparison-grid{grid-template-columns:1fr}
 .score-rules,.score-rules.five,.score-rules.six{grid-template-columns:1fr 1fr}
 .chart-row{grid-template-columns:1fr;gap:8px}
 .campaign-label{flex-direction:row}

@@ -59,6 +59,15 @@ const demoData: Agent[] = [
 function normalized(value: unknown) {
   return String(value ?? "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 }
+
+const NIGHT_SHIFT_AGENTS = new Set([
+  "Cindy", "Clyde", "Edmund", "Julia", "Kelvin", "Mariyam", "Rose", "Roslinda", "Shaera", "Sue", "Michelle",
+].map(normalized));
+
+function isNightShift(agent: Agent) {
+  return NIGHT_SHIFT_AGENTS.has(normalized(agent.name));
+}
+
 function numberValue(value: unknown) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -202,6 +211,11 @@ export function Dashboard({ username, isAdmin, initialAgents, initialFileName, i
   const passed = agents.filter((item) => item.status === "PASS").length;
   const failed = agents.filter((item) => item.status === "FAIL").length;
   const newAgents = agents.filter((item) => item.isNewAgent).length;
+  const nightShiftScored = scoredAgents.filter(isNightShift);
+  const dayShiftScored = scoredAgents.filter((item) => !isNightShift(item));
+  const nightShiftSla = nightShiftScored.length ? nightShiftScored.reduce((sum, item) => sum + (item.finalKpi ?? 0), 0) / nightShiftScored.length : null;
+  const dayShiftSla = dayShiftScored.length ? dayShiftScored.reduce((sum, item) => sum + (item.finalKpi ?? 0), 0) / dayShiftScored.length : null;
+  const shiftWinner = nightShiftSla === null || dayShiftSla === null ? "Awaiting complete data" : nightShiftSla === dayShiftSla ? "Tie" : nightShiftSla > dayShiftSla ? "Night Shift" : "Day Shift";
 
   async function upload(file?: File) {
     if (!file) return;
@@ -296,6 +310,8 @@ export function Dashboard({ username, isAdmin, initialAgents, initialFileName, i
     <section className="top-three-card"><div className="section-heading"><div><p className="eyebrow">Best overall performance</p><h2>Top 3 Overall Agents</h2><p>Final KPI → lowest Away % → highest QA → fewest complaints → fewest late.</p></div></div><div className="top-three-grid">{topThree.map((agent, index) => <article key={agent.name}><span className="top-three-rank">#{index + 1}</span><strong>{agent.name}</strong><p>{scoreText(agent.finalKpi ?? 0)}% KPI</p><small>{scoreText(agent.qaRate ?? 0)}% QA · {scoreText(agent.awayRate)}% away · {agent.status}</small></article>)}</div></section>
 
     <section className="top-three-card new-agent-panel"><div className="section-heading"><div><p className="eyebrow">Yellow-highlighted agents</p><h2>Top 3 New Agents</h2><p>Uses the same ranking rules and only includes yellow-highlighted Excel rows.</p></div></div><div className="top-three-grid">{topNewAgents.length ? topNewAgents.map((agent, index) => <article key={agent.name}><span className="top-three-rank">#{index + 1}</span><strong>{agent.name}</strong><span className="new-agent-badge">NEW AGENT</span><p>{scoreText(agent.finalKpi ?? 0)}% KPI</p><small>{scoreText(agent.qaRate ?? 0)}% QA · {scoreText(agent.awayRate)}% away · {agent.status}</small></article>) : <p className="muted">No yellow-highlighted new agents were found.</p>}</div></section>
+
+    <section className="shift-comparison-card"><div className="section-heading"><div><p className="eyebrow">Shift performance</p><h2>Night Shift vs Day Shift</h2><p>Overall SLA is the average Final KPI of agents with a QA score in each shift.</p></div><span className="benchmark">Top SLA: {shiftWinner}</span></div><div className="shift-comparison-grid"><article className={shiftWinner === "Night Shift" ? "shift-winner" : ""}><span>Night Shift</span><strong>{nightShiftSla === null ? "—" : `${nightShiftSla.toFixed(1)}%`}</strong><small>{nightShiftScored.length} scored agents</small></article><article className={shiftWinner === "Day Shift" ? "shift-winner" : ""}><span>Day Shift</span><strong>{dayShiftSla === null ? "—" : `${dayShiftSla.toFixed(1)}%`}</strong><small>{dayShiftScored.length} scored agents</small></article></div></section>
 
     <section className="metrics-grid kpi-seven"><article><p>Top Agent</p><strong className="top-agent-name">{topAgent?.name ?? "—"}</strong><span>{topAgent ? `${scoreText(topAgent.finalKpi ?? 0)}% KPI` : "No data"}</span></article><article><p>Overall KPI</p><strong>{averageScore.toFixed(1)}%</strong></article><article><p>QA</p><strong>{averageQa.toFixed(1)}%</strong></article><article><p>Away</p><strong>{averageAway.toFixed(1)}%</strong></article><article><p>Passed</p><strong className="positive">{passed}</strong></article><article><p>Failed</p><strong className="negative">{failed}</strong></article><article><p>New Agents</p><strong>{newAgents}</strong></article></section>
 
