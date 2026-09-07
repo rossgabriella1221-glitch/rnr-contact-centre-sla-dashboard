@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 type DashboardAgent = {
   name: string;
+  totalCalls: number;
   workHours: number;
   complaints: number;
   compliments: number;
@@ -13,6 +14,7 @@ type DashboardAgent = {
   nonWorkingDays: number;
   awayMinutes: number;
   loggedInMinutes: number;
+  qaRate: number | null;
   isNewAgent: boolean;
   feedbackScore: number;
   attendanceRate: number;
@@ -20,7 +22,11 @@ type DashboardAgent = {
   awayRate: number;
   awayScore: number;
   lateScore: number;
-  totalScore: number;
+  callsScore: number;
+  baseKpi: number;
+  finalKpi: number | null;
+  status: "PASS" | "FAIL" | "REVIEW";
+  statusReason: string;
   feedbackPass: boolean;
   attendancePass: boolean;
   latePass: boolean;
@@ -29,11 +35,15 @@ type DashboardAgent = {
 function validAgent(value: unknown): value is DashboardAgent {
   if (!value || typeof value !== "object") return false;
   const agent = value as Record<string, unknown>;
-  const numberFields = ["workHours", "complaints", "compliments", "late", "workingDays", "daysAttended", "nonWorkingDays", "awayMinutes", "loggedInMinutes", "feedbackScore", "attendanceRate", "attendanceScore", "awayRate", "awayScore", "lateScore", "totalScore"];
+  const numberFields = ["totalCalls", "workHours", "complaints", "compliments", "late", "workingDays", "daysAttended", "nonWorkingDays", "awayMinutes", "loggedInMinutes", "feedbackScore", "attendanceRate", "attendanceScore", "awayRate", "awayScore", "lateScore", "callsScore", "baseKpi"];
   return typeof agent.name === "string"
     && agent.name.trim().length > 0
     && agent.name.length <= 200
     && numberFields.every((field) => typeof agent[field] === "number" && Number.isFinite(agent[field]))
+    && (agent.qaRate === null || typeof agent.qaRate === "number" && Number.isFinite(agent.qaRate))
+    && (agent.finalKpi === null || typeof agent.finalKpi === "number" && Number.isFinite(agent.finalKpi))
+    && (agent.status === "PASS" || agent.status === "FAIL" || agent.status === "REVIEW")
+    && typeof agent.statusReason === "string"
     && typeof agent.isNewAgent === "boolean"
     && typeof agent.feedbackPass === "boolean"
     && typeof agent.attendancePass === "boolean"
