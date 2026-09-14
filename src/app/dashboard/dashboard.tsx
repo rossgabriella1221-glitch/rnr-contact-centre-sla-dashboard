@@ -20,6 +20,7 @@ export type Agent = {
   loggedInMinutes: number;
   qaRate: number | null;
   qaScore: number | null;
+  otherNonVoice: boolean;
   isNewAgent: boolean;
   feedbackScore: number;
   attendanceRate: number;
@@ -52,8 +53,8 @@ type StyledCell = XLSX.CellObject & {
 };
 
 const demoData: Agent[] = [
-  scoreAgent({ name: "Agent A", totalCalls: 620, workHours: 8, complaints: 0, compliments: 2, late: 1, workingDays: 22, daysAttended: 21, nonWorkingDays: 1, awayMinutes: 18, loggedInMinutes: 480, qaRate: 94, isNewAgent: false }),
-  scoreAgent({ name: "Agent B", totalCalls: 540, workHours: 12, complaints: 1, compliments: 3, late: 2, workingDays: 18, daysAttended: 17, nonWorkingDays: 1, awayMinutes: 30, loggedInMinutes: 650, qaRate: 91, isNewAgent: true }),
+  scoreAgent({ name: "Agent A", totalCalls: 620, workHours: 8, complaints: 0, compliments: 2, late: 1, workingDays: 22, daysAttended: 21, nonWorkingDays: 1, awayMinutes: 18, loggedInMinutes: 480, qaRate: 94, otherNonVoice: false, isNewAgent: false }),
+  scoreAgent({ name: "Agent B", totalCalls: 540, workHours: 12, complaints: 1, compliments: 3, late: 2, workingDays: 18, daysAttended: 17, nonWorkingDays: 1, awayMinutes: 30, loggedInMinutes: 650, qaRate: 91, otherNonVoice: true, isNewAgent: true }),
 ];
 
 function normalized(value: unknown) {
@@ -100,7 +101,8 @@ function scoreAgent(input: Omit<Agent, "qaScore" | "feedbackScore" | "attendance
   const attendanceRate = input.workingDays > 0 ? Math.min(100, Math.round((input.daysAttended / input.workingDays) * 10000) / 100) : 0;
   const attendancePass = input.workHours >= 12 ? input.nonWorkingDays <= 3 : input.nonWorkingDays <= 5;
   const attendanceScore = attendancePass ? 20 : 0;
-  const awayRate = input.loggedInMinutes > 0 ? Math.min(100, Math.round((input.awayMinutes / input.loggedInMinutes) * 10000) / 100) : 0;
+  const rawAwayRate = input.loggedInMinutes > 0 ? Math.min(100, Math.round((input.awayMinutes / input.loggedInMinutes) * 10000) / 100) : 0;
+  const awayRate = input.otherNonVoice ? Math.round((rawAwayRate / 2) * 100) / 100 : rawAwayRate;
   const awayScore = Math.round(Math.max(0, 10 * (1 - Math.min(awayRate, 20) / 20)) * 100) / 100;
   const latePass = input.late <= 3;
   const lateScore = latePass ? 20 : 0;
@@ -185,6 +187,7 @@ function refreshSavedAgent(agent: Agent): Agent {
     awayMinutes: Number(agent.awayMinutes ?? 0),
     loggedInMinutes: Number(agent.loggedInMinutes ?? 0),
     qaRate: agent.qaRate ?? null,
+    otherNonVoice: Boolean(agent.otherNonVoice),
     isNewAgent: Boolean(agent.isNewAgent),
   });
 }
@@ -240,8 +243,10 @@ export function Dashboard({ username, isAdmin, initialAgents, initialFileName, i
         awayTime: findHeader(headerMap, ["Total Away Time", "Away Time"]),
         loggedInTime: findHeader(headerMap, ["Total Logged-In Time", "Total Logged In Time", "Logged-In Time", "Logged In Time"]),
         qa: findHeader(headerMap, ["QA", "QA Score", "QA %", "QA Percentage", "Quality Score"]),
+        otherNonVoice: findHeader(headerMap, ["Other non Voice (Yes/No)", "Other Non Voice", "Non Voice", "Non-Voice"]),
       };
-      if (Object.values(index).some((i) => i < 0)) {
+      const requiredIndexes = Object.entries(index).filter(([key]) => key !== "otherNonVoice").map(([, value]) => value);
+      if (requiredIndexes.some((i) => i < 0)) {
         throw new Error("Required KPI headers are missing");
       }
 
@@ -269,6 +274,7 @@ export function Dashboard({ username, isAdmin, initialAgents, initialFileName, i
           awayMinutes: durationMinutes(row[index.awayTime]),
           loggedInMinutes: durationMinutes(row[index.loggedInTime]),
           qaRate: qaValue(row[index.qa]),
+          otherNonVoice: index.otherNonVoice >= 0 && ["yes", "y", "true", "1"].includes(String(row[index.otherNonVoice] ?? "").trim().toLowerCase()),
           isNewAgent,
         })];
       });
@@ -289,7 +295,7 @@ export function Dashboard({ username, isAdmin, initialAgents, initialFileName, i
   }
 
   function exportCsv() {
-    const lines: (string | number)[][] = [["Rank", "Agent Name", "New Agent", "Total Calls", "Complaints", "Compliments", "Late", "Working Days", "Days Attended", "Non Working Days", "Away %", "QA %", "Calls Score", "Feedback Score", "Attendance Score", "Late Score", "Away Score", "QA Score", "Base KPI", "Final KPI", "Status", "Reason"], ...ranked.map((a, i) => [i + 1, a.name, a.isNewAgent ? "Yes" : "No", a.totalCalls, a.complaints, a.compliments, a.late, a.workingDays, a.daysAttended, a.nonWorkingDays, a.awayRate, a.qaRate ?? "", a.callsScore, a.feedbackScore, a.attendanceScore, a.lateScore, a.awayScore, a.qaScore ?? "", a.baseKpi, a.finalKpi ?? "", a.status, a.statusReason])];
+    const lines: (string | number)[][] = [["Rank", "Agent Name", "New Agent", "Other Non Voice", "Total Calls", "Complaints", "Compliments", "Late", "Working Days", "Days Attended", "Non Working Days", "Away %", "QA %", "Calls Score", "Feedback Score", "Attendance Score", "Late Score", "Away Score", "QA Score", "Base KPI", "Final KPI", "Status", "Reason"], ...ranked.map((a, i) => [i + 1, a.name, a.isNewAgent ? "Yes" : "No", a.otherNonVoice ? "Yes" : "No", a.totalCalls, a.complaints, a.compliments, a.late, a.workingDays, a.daysAttended, a.nonWorkingDays, a.awayRate, a.qaRate ?? "", a.callsScore, a.feedbackScore, a.attendanceScore, a.lateScore, a.awayScore, a.qaScore ?? "", a.baseKpi, a.finalKpi ?? "", a.status, a.statusReason])];
     const blob = new Blob([lines.map((row) => row.map(escapeCsv).join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
@@ -315,9 +321,9 @@ export function Dashboard({ username, isAdmin, initialAgents, initialFileName, i
 
     <section className="metrics-grid kpi-seven"><article><p>Top Agent</p><strong className="top-agent-name">{topAgent?.name ?? "—"}</strong><span>{topAgent ? `${scoreText(topAgent.finalKpi ?? 0)}% KPI` : "No data"}</span></article><article><p>Overall KPI</p><strong>{averageScore.toFixed(1)}%</strong></article><article><p>QA</p><strong>{averageQa.toFixed(1)}%</strong></article><article><p>Away</p><strong>{averageAway.toFixed(1)}%</strong></article><article><p>Passed</p><strong className="positive">{passed}</strong></article><article><p>Failed</p><strong className="negative">{failed}</strong></article><article><p>New Agents</p><strong>{newAgents}</strong></article></section>
 
-    <section className="scoring-card"><div className="section-heading"><div><p className="eyebrow">100-point framework</p><h2>KPI scoring rules</h2></div><span className="benchmark">QA must be 85%+</span></div><div className="score-rules six"><div><strong>10</strong><span>Calls</span><small>500+ = 10 · below 500 = 5</small></div><div><strong>20</strong><span>Feedback</span><small>3 compliments offset each complaint</small></div><div><strong>20</strong><span>Attendance</span><small>8h: ≤5 days · 12h: ≤3 days</small></div><div><strong>20</strong><span>Late</span><small>≤3 = 20 · above 3 = 0</small></div><div><strong>10</strong><span>Away</span><small>Away % contributes up to 10 points</small></div><div><strong>20</strong><span>QA</span><small>QA % contributes up to 20 points</small></div></div></section>
+    <section className="scoring-card"><div className="section-heading"><div><p className="eyebrow">100-point framework</p><h2>KPI scoring rules</h2></div><span className="benchmark">QA must be 85%+</span></div><div className="score-rules six"><div><strong>10</strong><span>Calls</span><small>500+ = 10 · below 500 = 5</small></div><div><strong>20</strong><span>Feedback</span><small>3 compliments offset each complaint</small></div><div><strong>20</strong><span>Attendance</span><small>8h: ≤5 days · 12h: ≤3 days</small></div><div><strong>20</strong><span>Late</span><small>≤3 = 20 · above 3 = 0</small></div><div><strong>10</strong><span>Away</span><small>Column N Yes halves Away %</small></div><div><strong>20</strong><span>QA</span><small>QA % contributes up to 20 points</small></div></div></section>
 
-    <section className="detail-card"><div className="section-heading"><div><p className="eyebrow">Full scoring breakdown</p><h2>Every Agent</h2></div></div><div className="table-wrap"><table className="kpi-table"><thead><tr><th>Rank</th><th>Agent</th><th>Calls</th><th>Complaints</th><th>Compliments</th><th>Late</th><th>Attendance</th><th>Away %</th><th>QA %</th><th>Calls Pts</th><th>Feedback Pts</th><th>Attendance Pts</th><th>Late Pts</th><th>Away Pts</th><th>QA Pts</th><th>Subtotal</th><th>Final KPI</th><th>Status</th></tr></thead><tbody>{ranked.map((a, i) => <tr key={a.name} className={a.isNewAgent ? "new-agent-row" : ""}><td>#{i + 1}</td><td><strong>{a.name}</strong>{a.isNewAgent && <span className="new-agent-badge">NEW AGENT</span>}</td><td>{a.totalCalls}</td><td>{a.complaints}</td><td>{a.compliments}</td><td>{a.late}</td><td>{a.daysAttended}/{a.workingDays} · {a.nonWorkingDays} non-work</td><td>{scoreText(a.awayRate)}%</td><td className={(a.qaRate ?? 0) < 85 ? "negative" : "positive"}>{a.qaRate === null ? "—" : `${scoreText(a.qaRate)}%`}</td><td>{a.callsScore}/10</td><td>{a.feedbackScore}/20</td><td>{a.attendanceScore}/20</td><td>{a.lateScore}/20</td><td>{scoreText(a.awayScore)}/10</td><td>{a.qaScore === null ? "—" : `${scoreText(a.qaScore)}/20`}</td><td>{scoreText(a.baseKpi)}/80</td><td><strong>{a.finalKpi === null ? "—" : `${scoreText(a.finalKpi)}%`}</strong></td><td><span className={`status-badge ${a.status.toLowerCase()}`}>{a.status}</span><small className="status-reason">{a.statusReason}</small></td></tr>)}</tbody></table></div></section>
+    <section className="detail-card"><div className="section-heading"><div><p className="eyebrow">Full scoring breakdown</p><h2>Every Agent</h2></div></div><div className="table-wrap"><table className="kpi-table"><thead><tr><th>Rank</th><th>Agent</th><th>Non Voice</th><th>Calls</th><th>Complaints</th><th>Compliments</th><th>Late</th><th>Attendance</th><th>Away %</th><th>QA %</th><th>Calls Pts</th><th>Feedback Pts</th><th>Attendance Pts</th><th>Late Pts</th><th>Away Pts</th><th>QA Pts</th><th>Subtotal</th><th>Final KPI</th><th>Status</th></tr></thead><tbody>{ranked.map((a, i) => <tr key={a.name} className={a.isNewAgent ? "new-agent-row" : ""}><td>#{i + 1}</td><td><strong>{a.name}</strong>{a.isNewAgent && <span className="new-agent-badge">NEW AGENT</span>}</td><td>{a.otherNonVoice ? "Yes · Away halved" : "No"}</td><td>{a.totalCalls}</td><td>{a.complaints}</td><td>{a.compliments}</td><td>{a.late}</td><td>{a.daysAttended}/{a.workingDays} · {a.nonWorkingDays} non-work</td><td>{scoreText(a.awayRate)}%</td><td className={(a.qaRate ?? 0) < 85 ? "negative" : "positive"}>{a.qaRate === null ? "—" : `${scoreText(a.qaRate)}%`}</td><td>{a.callsScore}/10</td><td>{a.feedbackScore}/20</td><td>{a.attendanceScore}/20</td><td>{a.lateScore}/20</td><td>{scoreText(a.awayScore)}/10</td><td>{a.qaScore === null ? "—" : `${scoreText(a.qaScore)}/20`}</td><td>{scoreText(a.baseKpi)}/80</td><td><strong>{a.finalKpi === null ? "—" : `${scoreText(a.finalKpi)}%`}</strong></td><td><span className={`status-badge ${a.status.toLowerCase()}`}>{a.status}</span><small className="status-reason">{a.statusReason}</small></td></tr>)}</tbody></table></div></section>
 
     <footer><span>Signed in as {username} · {isAdmin ? "Administrator" : "User"}</span><span>Column B retained in Excel but excluded from all scoring</span></footer>
   </main>;

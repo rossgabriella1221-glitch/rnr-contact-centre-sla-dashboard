@@ -16,6 +16,7 @@ type DashboardAgent = {
   loggedInMinutes: number;
   qaRate: number | null;
   qaScore: number | null;
+  otherNonVoice: boolean;
   isNewAgent: boolean;
   feedbackScore: number;
   attendanceRate: number;
@@ -46,6 +47,7 @@ function validAgent(value: unknown): value is DashboardAgent {
     && (agent.finalKpi === null || typeof agent.finalKpi === "number" && Number.isFinite(agent.finalKpi))
     && (agent.status === "PASS" || agent.status === "FAIL" || agent.status === "REVIEW")
     && typeof agent.statusReason === "string"
+    && typeof agent.otherNonVoice === "boolean"
     && typeof agent.isNewAgent === "boolean"
     && typeof agent.feedbackPass === "boolean"
     && typeof agent.attendancePass === "boolean"
