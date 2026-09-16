@@ -207,6 +207,10 @@ export function Dashboard({ username, isAdmin, initialAgents, initialFileName, i
   const establishedAgents = ranked.filter((item) => !item.isNewAgent);
   const topThree = establishedAgents.slice(0, 3);
   const topNewAgents = ranked.filter((item) => item.isNewAgent).slice(0, 3);
+  const topCompliments = [...agents]
+    .filter((item) => item.compliments > 0)
+    .sort((a, b) => b.compliments - a.compliments || rankingSort(a, b))
+    .slice(0, 3);
   const topAgent = establishedAgents[0];
   const scoredAgents = agents.filter((item) => item.finalKpi !== null);
   const averageScore = scoredAgents.length ? scoredAgents.reduce((sum, item) => sum + (item.finalKpi ?? 0), 0) / scoredAgents.length : 0;
@@ -317,6 +321,8 @@ export function Dashboard({ username, isAdmin, initialAgents, initialFileName, i
     <section className="top-three-card"><div className="section-heading"><div><p className="eyebrow">Best overall performance</p><h2>Top 3 Overall Agents</h2><p>Excludes new agents. Final KPI → lowest Away % → highest QA → fewest complaints → fewest late.</p></div></div><div className="top-three-grid">{topThree.length ? topThree.map((agent, index) => <article key={agent.name}><span className="top-three-rank">#{index + 1}</span><strong>{agent.name}</strong><p>{scoreText(agent.finalKpi ?? 0)}% KPI</p><small>{scoreText(agent.qaRate ?? 0)}% QA · {scoreText(agent.awayRate)}% away · {agent.status}</small></article>) : <p className="muted">No established agents were found.</p>}</div></section>
 
     <section className="top-three-card new-agent-panel"><div className="section-heading"><div><p className="eyebrow">Yellow-highlighted agents</p><h2>Top 3 New Agents</h2><p>Uses the same ranking rules and only includes yellow-highlighted Excel rows.</p></div></div><div className="top-three-grid">{topNewAgents.length ? topNewAgents.map((agent, index) => <article key={agent.name}><span className="top-three-rank">#{index + 1}</span><strong>{agent.name}</strong><span className="new-agent-badge">NEW AGENT</span><p>{scoreText(agent.finalKpi ?? 0)}% KPI</p><small>{scoreText(agent.qaRate ?? 0)}% QA · {scoreText(agent.awayRate)}% away · {agent.status}</small></article>) : <p className="muted">No yellow-highlighted new agents were found.</p>}</div></section>
+
+    <section className="top-three-card"><div className="section-heading"><div><p className="eyebrow">Customer recognition</p><h2>Top Compliments</h2><p>Highest compliment count. KPI ranking rules break any ties.</p></div></div><div className="top-three-grid">{topCompliments.length ? topCompliments.map((agent, index) => <article key={agent.name}><span className="top-three-rank">{index === 0 ? "1st Place" : index === 1 ? "1st Runner-Up" : "2nd Runner-Up"}</span><strong>{agent.name}</strong><p>{agent.compliments} {agent.compliments === 1 ? "compliment" : "compliments"}</p><small>{scoreText(agent.finalKpi ?? 0)}% KPI · {agent.status}</small></article>) : <p className="muted">No compliments were recorded.</p>}</div></section>
 
     <section className="shift-comparison-card"><div className="section-heading"><div><p className="eyebrow">Shift performance</p><h2>Night Shift vs Day Shift</h2><p>Overall SLA is the average Final KPI of agents with a QA score in each shift.</p></div><span className="benchmark">Top SLA: {shiftWinner}</span></div><div className="shift-comparison-grid"><article className={shiftWinner === "Night Shift" ? "shift-winner" : ""}><span>Night Shift</span><strong>{nightShiftSla === null ? "—" : `${nightShiftSla.toFixed(1)}%`}</strong><small>{nightShiftScored.length} scored agents</small></article><article className={shiftWinner === "Day Shift" ? "shift-winner" : ""}><span>Day Shift</span><strong>{dayShiftSla === null ? "—" : `${dayShiftSla.toFixed(1)}%`}</strong><small>{dayShiftScored.length} scored agents</small></article></div></section>
 
