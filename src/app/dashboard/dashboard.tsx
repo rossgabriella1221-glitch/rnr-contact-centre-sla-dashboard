@@ -204,9 +204,10 @@ export function Dashboard({ username, isAdmin, initialAgents, initialFileName, i
   const fileRef = useRef<HTMLInputElement>(null);
 
   const ranked = useMemo(() => [...agents].sort(rankingSort), [agents]);
-  const topThree = ranked.slice(0, 3);
+  const establishedAgents = ranked.filter((item) => !item.isNewAgent);
+  const topThree = establishedAgents.slice(0, 3);
   const topNewAgents = ranked.filter((item) => item.isNewAgent).slice(0, 3);
-  const topAgent = ranked[0];
+  const topAgent = establishedAgents[0];
   const scoredAgents = agents.filter((item) => item.finalKpi !== null);
   const averageScore = scoredAgents.length ? scoredAgents.reduce((sum, item) => sum + (item.finalKpi ?? 0), 0) / scoredAgents.length : 0;
   const averageQa = scoredAgents.length ? scoredAgents.reduce((sum, item) => sum + (item.qaRate ?? 0), 0) / scoredAgents.length : 0;
@@ -313,7 +314,7 @@ export function Dashboard({ username, isAdmin, initialAgents, initialFileName, i
 
     {isAdmin && <UserAdmin />}
 
-    <section className="top-three-card"><div className="section-heading"><div><p className="eyebrow">Best overall performance</p><h2>Top 3 Overall Agents</h2><p>Final KPI → lowest Away % → highest QA → fewest complaints → fewest late.</p></div></div><div className="top-three-grid">{topThree.map((agent, index) => <article key={agent.name}><span className="top-three-rank">#{index + 1}</span><strong>{agent.name}</strong><p>{scoreText(agent.finalKpi ?? 0)}% KPI</p><small>{scoreText(agent.qaRate ?? 0)}% QA · {scoreText(agent.awayRate)}% away · {agent.status}</small></article>)}</div></section>
+    <section className="top-three-card"><div className="section-heading"><div><p className="eyebrow">Best overall performance</p><h2>Top 3 Overall Agents</h2><p>Excludes new agents. Final KPI → lowest Away % → highest QA → fewest complaints → fewest late.</p></div></div><div className="top-three-grid">{topThree.length ? topThree.map((agent, index) => <article key={agent.name}><span className="top-three-rank">#{index + 1}</span><strong>{agent.name}</strong><p>{scoreText(agent.finalKpi ?? 0)}% KPI</p><small>{scoreText(agent.qaRate ?? 0)}% QA · {scoreText(agent.awayRate)}% away · {agent.status}</small></article>) : <p className="muted">No established agents were found.</p>}</div></section>
 
     <section className="top-three-card new-agent-panel"><div className="section-heading"><div><p className="eyebrow">Yellow-highlighted agents</p><h2>Top 3 New Agents</h2><p>Uses the same ranking rules and only includes yellow-highlighted Excel rows.</p></div></div><div className="top-three-grid">{topNewAgents.length ? topNewAgents.map((agent, index) => <article key={agent.name}><span className="top-three-rank">#{index + 1}</span><strong>{agent.name}</strong><span className="new-agent-badge">NEW AGENT</span><p>{scoreText(agent.finalKpi ?? 0)}% KPI</p><small>{scoreText(agent.qaRate ?? 0)}% QA · {scoreText(agent.awayRate)}% away · {agent.status}</small></article>) : <p className="muted">No yellow-highlighted new agents were found.</p>}</div></section>
 
