@@ -16,14 +16,16 @@ export async function updateSession(request: NextRequest) {
     },
   });
   const { data: { user } } = await supabase.auth.getUser();
-  if (request.nextUrl.pathname.startsWith("/dashboard") && !user) {
+  if ((request.nextUrl.pathname.startsWith("/dashboard") || request.nextUrl.pathname.startsWith("/productivity")) && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    if (request.nextUrl.pathname.startsWith("/productivity")) url.searchParams.set("next", "/productivity");
     return NextResponse.redirect(url);
   }
   if (request.nextUrl.pathname === "/login" && user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = request.nextUrl.searchParams.get("next") === "/productivity" ? "/productivity" : "/dashboard";
+    url.search = "";
     return NextResponse.redirect(url);
   }
   return response;

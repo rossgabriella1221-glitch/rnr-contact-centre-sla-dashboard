@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: { serverActions: { bodySizeLimit: "6mb" } },
   // Vercel's file-based deployment builder loads these at build time. Mapping
   // them keeps Proxy (Middleware) and Node server functions on the same config.
   env: {

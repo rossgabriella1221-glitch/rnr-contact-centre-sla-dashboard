@@ -12,7 +12,7 @@ export async function signIn(_previousState: { error: string }, formData: FormDa
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: "Invalid email or password." };
-  redirect("/dashboard");
+  redirect(formData.get("next") === "/productivity" ? "/productivity" : "/dashboard");
 }
 
 export async function signOut() {
