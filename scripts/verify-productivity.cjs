@@ -41,7 +41,7 @@ if (process.argv[2]) {
   assert.ok(sariza.productivityScore > vodka.productivityScore);
   assert.notEqual(agents.find((a) => a.name === 'Nurhidayah').inboundAnswered, agents.find((a) => a.name === 'Nur Hidayah').inboundAnswered);
   assert.ok(agents.every((a) => a.productivityRate !== null && a.finalKpi >= 0 && a.finalKpi <= 100));
-  assert.ok(agents.filter((a) => a.otherNonVoice).every((a) => a.awayScore === 8));
+  assert.ok(agents.filter((a) => a.otherNonVoice).every((a) => a.awayScore === 6));
   assert.ok(agents.every((a) => Math.abs(a.finalKpi - (a.productivityScore + a.feedbackScore + a.attendanceScore + a.lateScore + a.awayScore + a.qaScore)) < 0.011));
   const refreshed = scoreProductivity(agents.map(refreshSavedAgent));
   agents.forEach((a, i) => { for (const key of Object.keys(a)) assert.equal(refreshed[i][key], a[key], key); });

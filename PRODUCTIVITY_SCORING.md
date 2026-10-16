@@ -21,7 +21,7 @@ Feedback awards 20 points when there are no complaints or at least three
 compliments per complaint; otherwise zero, and the existing complaint failure
 rule applies. Attendance remains 20 points under the existing attendance rule.
 Lateness remains 10 points for three or fewer late occurrences, otherwise zero.
-Away for Non Voice Yes remains a fixed 8 points, now out of 10. For Non Voice No,
+Away for Non Voice Yes remains a fixed 6 points, now out of 10. For Non Voice No,
 Away points = 10 × (1 − min(Away %, 20%) / 20%). QA contributes QA % × 20 / 100;
 there is no separate QA-below-85 automatic failure. The overall pass mark is 85.
 

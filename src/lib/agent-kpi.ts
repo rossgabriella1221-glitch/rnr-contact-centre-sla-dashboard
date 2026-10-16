@@ -105,7 +105,7 @@ export function scoreAgent(input: Omit<Agent, "qaScore" | "feedbackScore" | "att
   const attendanceScore = attendancePass ? 20 : 0;
   const rawAwayRate = input.loggedInMinutes > 0 ? Math.min(100, Math.round((input.awayMinutes / input.loggedInMinutes) * 10000) / 100) : 0;
   const awayRate = input.otherNonVoice ? Math.round((rawAwayRate / 2) * 100) / 100 : rawAwayRate;
-  const awayScore = input.otherNonVoice ? 8 : Math.round(Math.max(0, 10 * (1 - Math.min(awayRate, 20) / 20)) * 100) / 100;
+  const awayScore = input.otherNonVoice ? 6 : Math.round(Math.max(0, 10 * (1 - Math.min(awayRate, 20) / 20)) * 100) / 100;
   const latePass = input.late <= 3;
   const lateScore = latePass ? 10 : 0;
   const baseKpi = Math.round((callsScore + feedbackScore + attendanceScore + lateScore + awayScore) * 100) / 100;
