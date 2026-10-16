@@ -12,8 +12,10 @@ when the roster changes, so this is a relative score rather than a fixed target.
 
 Calls handled = inbound answered + outbound connected. Calls/hour divides that
 total by logged-in hours. Both are visible for context and do not add points.
-The productivity leaderboard sorts by unrounded productivity %, then calls
-handled, then name. The existing overall/new-agent ranking rules are retained.
+The combined Top 3 Overall Agents panel ranks by final KPI and shows calls
+handled, productivity %, productivity points, QA and Away alongside one overall
+score out of 100. Productivity is already included in that score. The existing
+overall/new-agent ranking rules are retained.
 
 Feedback awards 20 points when there are no complaints or at least three
 compliments per complaint; otherwise zero, and the existing complaint failure
