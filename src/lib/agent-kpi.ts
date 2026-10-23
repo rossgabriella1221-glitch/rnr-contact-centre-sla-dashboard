@@ -64,7 +64,7 @@ export function normalized(value: unknown) {
 }
 
 const NIGHT_SHIFT_AGENTS = new Set([
-  "Cindy", "Clyde", "Edmund", "Julia", "Kelvin", "Mariyam", "Rose", "Roslinda", "Shaera", "Sue", "Michelle",
+  "Cindy", "Cindy Tan", "Clyde", "Xue Yuheng Clyde", "Edmund", "Julia", "Kelvin", "Mariyam", "Mariyam Jasuni", "Rose", "Roslinda", "Shaera", "Sue", "Michelle", "Miche Yeo", "Koh Kah Yong",
 ].map(normalized));
 
 export function isNightShift(agent: Agent) {
