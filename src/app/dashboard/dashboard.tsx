@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { signOut } from "../login/actions";
 import { UserAdmin } from "./user-admin";
+import { ExecutiveOverview } from "./executive-overview";
 import { replaceDashboardData } from "./data-actions";
 
 import { type Agent, demoData, scoreProductivity, refreshSavedAgent, rankingSort, isNightShift, scoreText, escapeCsv, parseKpiWorkbook } from "@/lib/agent-kpi";
@@ -79,6 +80,8 @@ export function Dashboard({ username, isAdmin, initialAgents, initialFileName, i
     <header className="topbar"><div><div className="brand-mark small">KPI</div><div><p className="eyebrow">Operations intelligence</p><h1>Agent KPI Performance Dashboard</h1></div></div><div className="toolbar no-print"><button onClick={() => setDark((v) => !v)}>{dark ? "Light Mode" : "Dark Mode"}</button>{isAdmin && <button onClick={() => setBroadcast((v) => !v)}>{broadcast ? "Exit Broadcast" : "Broadcast Mode"}</button>}<form action={signOut}><button>Sign out</button></form></div></header>
 
     <section className="control-strip no-print"><div className="source"><p className="label">Data source</p><strong>{fileName}</strong><p className="status-copy">{message}</p></div><input ref={fileRef} hidden type="file" accept=".xlsx" onChange={(e) => upload(e.target.files?.[0])} /><button className="primary-button" disabled={saving} onClick={() => fileRef.current?.click()}>{saving ? "Saving…" : "Upload KPI Excel"}</button><button onClick={exportCsv}>Export CSV</button><button onClick={() => window.print()}>Print</button></section>
+
+    <ExecutiveOverview agents={agents} fileName={fileName} />
 
     {isAdmin && <UserAdmin />}
     {agents.some((a) => a.productivityRate == null) && <p className="status-copy" role="status">Call details are missing for some agents. Upload the workbook containing both KPI and call details to calculate their new scores. Existing records are retained.</p>}
